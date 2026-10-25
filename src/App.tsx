@@ -2,7 +2,7 @@ import "./App.css";
 import GuestLayout from "./components/GuestLayout";
 import ProtectedLayout from "./components/ProtectedLayout";
 import { useAuthInit } from "./hooks/useAuthInit";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router";
+import { BrowserRouter, Route, Routes } from "react-router";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Home from "./pages/Home";
