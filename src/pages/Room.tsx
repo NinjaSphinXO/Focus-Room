@@ -124,7 +124,9 @@ const Room = () => {
     const members = [...(membersQuery.data ?? [])].sort((a, b) => {
         if (a.user_id === room.host_id) return -1;
         if (b.user_id === room.host_id) return 1;
-        return a.joined_at.localeCompare(b.joined_at);
+        return (
+            new Date(a.joined_at).getTime() - new Date(b.joined_at).getTime()
+        );
     });
 
     const hostName =
