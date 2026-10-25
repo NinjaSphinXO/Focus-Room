@@ -2,7 +2,15 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { Users, LogOut, Trash2, ArrowLeft, Shield, Copy, Check } from "lucide-react";
+import {
+    Users,
+    LogOut,
+    Trash2,
+    ArrowLeft,
+    Shield,
+    Copy,
+    Check,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
     Card,
@@ -74,20 +82,16 @@ const Room = () => {
     // ── Copy feedback reset ──
     useEffect(() => {
         if (!copied) return;
-        const timeout = setTimeout(() => setCopied(false), 2000);
+        const timeout = setTimeout(() => setCopied(false), 1000);
         return () => clearTimeout(timeout);
     }, [copied]);
 
     const handleCopy = async (text: string) => {
-        try {
-            await navigator.clipboard.writeText(text);
-            setCopied(true);
-        } catch {
-            // clipboard blocked (not https/localhost): ignore
-        }
+        await navigator.clipboard.writeText(text);
+        setCopied(true);
     };
 
-    // ── Page states (all hooks are above this line) ──
+    // ── Page states ──
     if (roomQuery.isPending) {
         return (
             <p className="p-6 text-sm text-muted-foreground">Loading room...</p>
@@ -174,12 +178,15 @@ const Room = () => {
             </div>
 
             {actionError && (
-                <p role="alert" className="text-sm font-medium text-destructive">
+                <p
+                    role="alert"
+                    className="text-sm font-medium text-destructive"
+                >
                     {actionError.message}
                 </p>
             )}
 
-            {/* Delete confirm (host only, controlled) */}
+            {/* Delete confirm */}
             <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
@@ -306,9 +313,13 @@ const Room = () => {
                                                 </Avatar>
                                                 <div>
                                                     <p className="text-sm font-medium leading-none">
-                                                        {name}
+                                                        {name
+                                                            .charAt(0)
+                                                            .toUpperCase() +
+                                                            name.slice(1)}
                                                         {isYou && (
-                                                            <span className="ml-2 text-xs font-normal text-muted-foreground">
+                                                            <span className="text-xs font-normal text-muted-foreground">
+                                                                {" "}
                                                                 (you)
                                                             </span>
                                                         )}
