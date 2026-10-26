@@ -293,7 +293,7 @@ const Room = () => {
                             <div className="text-sm font-medium text-muted-foreground">
                                 Hosted by
                             </div>
-                            <div className="text-sm">{hostName}</div>
+                            <div className="text-sm capitalize">{hostName}</div>
                         </div>
                         <div className="space-y-1">
                             <div className="text-sm font-medium text-muted-foreground">
@@ -391,11 +391,8 @@ const Room = () => {
                                                     </span>
                                                 </div>
                                                 <div>
-                                                    <p className="text-sm font-medium leading-none">
-                                                        {name
-                                                            .charAt(0)
-                                                            .toUpperCase() +
-                                                            name.slice(1)}
+                                                    <p className="text-sm font-medium leading-none capitalize">
+                                                        {name}
                                                         {isYou && (
                                                             <span className="text-xs font-normal text-muted-foreground">
                                                                 {" "}
