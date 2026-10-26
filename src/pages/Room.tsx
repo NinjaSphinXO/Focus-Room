@@ -34,12 +34,23 @@ import {
 } from "@/components/ui/alert-dialog";
 import { deleteRoom, getMembers, leaveRoom, roomByCode } from "@/api/rooms";
 import { useAppSelector } from "@/store/hooks";
+import { useRoomChannel } from "@/hooks/useRoomChannel";
+
+const statusLabel = (status: string) => {
+    if (status === "SUBSCRIBED") return "Live";
+    if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+        return "Connection problem";
+    }
+    return "Connecting...";
+};
 
 const Room = () => {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const { code } = useParams<{ code: string }>();
     const user = useAppSelector((s) => s.auth.user);
+    const onlineUserIds = useAppSelector((s) => s.room.onlineUserIds);
+    const channelStatus = useAppSelector((s) => s.room.channelStatus);
 
     const [copied, setCopied] = useState(false);
     const [deleteOpen, setDeleteOpen] = useState(false);
@@ -58,6 +69,26 @@ const Room = () => {
         queryFn: () => getMembers(roomId!),
         enabled: !!roomId,
     });
+
+    useRoomChannel(roomId, user?.id);
+
+    // Someone online who is not in our members list = they just joined.
+    // Refetch members once. After refetch they are known, so no loop.
+    useEffect(() => {
+        if (!roomId || !membersQuery.isSuccess) return;
+        const knownIds = new Set(membersQuery.data.map((m) => m.user_id));
+        if (onlineUserIds.some((id) => !knownIds.has(id))) {
+            queryClient.invalidateQueries({
+                queryKey: ["room-members", roomId],
+            });
+        }
+    }, [
+        onlineUserIds,
+        membersQuery.isSuccess,
+        membersQuery.data,
+        roomId,
+        queryClient,
+    ]);
 
     // ── Mutations (plain, not optimistic: user leaves this page anyway) ──
     const afterRoomGone = () => {
@@ -87,11 +118,15 @@ const Room = () => {
     }, [copied]);
 
     const handleCopy = async (text: string) => {
-        await navigator.clipboard.writeText(text);
-        setCopied(true);
+        try {
+            await navigator.clipboard.writeText(text);
+            setCopied(true);
+        } catch {
+            // clipboard blocked (not https/localhost): ignore
+        }
     };
 
-    // ── Page states ──
+    // ── Page states (all hooks are above this line) ──
     if (roomQuery.isPending) {
         return (
             <p className="p-6 text-sm text-muted-foreground">Loading room...</p>
@@ -120,6 +155,8 @@ const Room = () => {
 
     const room = roomQuery.data;
     const isHost = room.host_id === user?.id;
+    const onlineSet = new Set(onlineUserIds);
+    const isLive = channelStatus === "SUBSCRIBED";
 
     const members = [...(membersQuery.data ?? [])].sort((a, b) => {
         if (a.user_id === room.host_id) return -1;
@@ -251,11 +288,33 @@ const Room = () => {
                         </CardDescription>
                     </CardHeader>
                     <Separator />
-                    <CardContent className="space-y-1 pt-4">
-                        <div className="text-sm font-medium text-muted-foreground">
-                            Hosted by
+                    <CardContent className="space-y-4 pt-4">
+                        <div className="space-y-1">
+                            <div className="text-sm font-medium text-muted-foreground">
+                                Hosted by
+                            </div>
+                            <div className="text-sm">{hostName}</div>
                         </div>
-                        <div className="text-sm">{hostName}</div>
+                        <div className="space-y-1">
+                            <div className="text-sm font-medium text-muted-foreground">
+                                Status
+                            </div>
+                            <div className="flex items-center gap-2 text-sm">
+                                <span
+                                    className={`h-2 w-2 rounded-full ${
+                                        isLive
+                                            ? "bg-emerald-500"
+                                            : "bg-muted-foreground/40"
+                                    }`}
+                                />
+                                {statusLabel(channelStatus)}
+                                {isLive && (
+                                    <span className="text-muted-foreground">
+                                        · {onlineUserIds.length} online
+                                    </span>
+                                )}
+                            </div>
+                        </div>
                     </CardContent>
                 </Card>
 
@@ -299,6 +358,9 @@ const Room = () => {
                                     const isMemberHost =
                                         member.user_id === room.host_id;
                                     const isYou = member.user_id === user?.id;
+                                    const isOnline = onlineSet.has(
+                                        member.user_id,
+                                    );
 
                                     return (
                                         <div
@@ -306,13 +368,28 @@ const Room = () => {
                                             className="flex items-center justify-between rounded-lg border bg-card/50 p-3 transition-colors hover:bg-accent/50"
                                         >
                                             <div className="flex items-center gap-3">
-                                                <Avatar className="h-9 w-9 border">
-                                                    <AvatarFallback className="text-xs font-semibold">
-                                                        {name
-                                                            .substring(0, 2)
-                                                            .toUpperCase()}
-                                                    </AvatarFallback>
-                                                </Avatar>
+                                                <div className="relative">
+                                                    <Avatar className="h-9 w-9 border">
+                                                        <AvatarFallback className="text-xs font-semibold">
+                                                            {name
+                                                                .substring(0, 2)
+                                                                .toUpperCase()}
+                                                        </AvatarFallback>
+                                                    </Avatar>
+                                                    <span
+                                                        className={`absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-background ${
+                                                            isOnline
+                                                                ? "bg-emerald-500"
+                                                                : "bg-muted-foreground/40"
+                                                        }`}
+                                                    >
+                                                        <span className="sr-only">
+                                                            {isOnline
+                                                                ? "Online"
+                                                                : "Offline"}
+                                                        </span>
+                                                    </span>
+                                                </div>
                                                 <div>
                                                     <p className="text-sm font-medium leading-none">
                                                         {name
