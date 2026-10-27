@@ -65,6 +65,44 @@ export type Database = {
           },
         ]
       }
+      room_timers: {
+        Row: {
+          duration_seconds: number
+          ends_at: string | null
+          phase: string
+          remaining_seconds: number
+          room_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          duration_seconds?: number
+          ends_at?: string | null
+          phase?: string
+          remaining_seconds?: number
+          room_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          duration_seconds?: number
+          ends_at?: string | null
+          phase?: string
+          remaining_seconds?: number
+          room_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_timers_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: true
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rooms: {
         Row: {
           code: string
@@ -102,6 +140,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_server_time: { Args: never; Returns: string }
       is_room_member: { Args: { p_room_id: string }; Returns: boolean }
       join_room_by_code: {
         Args: { p_code: string }
@@ -115,6 +154,60 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "rooms"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      timer_pause: {
+        Args: { p_room_id: string }
+        Returns: {
+          duration_seconds: number
+          ends_at: string | null
+          phase: string
+          remaining_seconds: number
+          room_id: string
+          status: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "room_timers"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      timer_set: {
+        Args: { p_duration_seconds: number; p_phase: string; p_room_id: string }
+        Returns: {
+          duration_seconds: number
+          ends_at: string | null
+          phase: string
+          remaining_seconds: number
+          room_id: string
+          status: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "room_timers"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      timer_start: {
+        Args: { p_room_id: string }
+        Returns: {
+          duration_seconds: number
+          ends_at: string | null
+          phase: string
+          remaining_seconds: number
+          room_id: string
+          status: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "room_timers"
           isOneToOne: true
           isSetofReturn: false
         }

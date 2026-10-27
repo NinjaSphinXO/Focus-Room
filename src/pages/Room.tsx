@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import RoomTimer from "@/components/RoomTimer";
 import { format } from "date-fns";
 import {
     Users,
@@ -249,7 +250,7 @@ const Room = () => {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-
+            <RoomTimer roomId={room.id} isHost={isHost} />
             {/* Main grid */}
             <div className="grid gap-6 md:grid-cols-3">
                 {/* Room info */}
