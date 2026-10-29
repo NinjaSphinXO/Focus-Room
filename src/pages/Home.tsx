@@ -1,4 +1,3 @@
-import { supabase } from "@/lib/supabaseClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -9,29 +8,27 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
+import AppHeader from "@/components/AppHeader";
+import TFieldError from "@/components/TFieldError";
 import { createRoom, getMyRooms, joinRoom } from "@/api/rooms";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
 import { Controller, useForm } from "react-hook-form";
-import {
-    Field,
-    FieldError,
-    FieldGroup,
-    FieldLabel,
-} from "@/components/ui/field";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useTranslation } from "react-i18next";
 import {
     createRoomSchema,
     joinRoomSchema,
     type CreateRoomSchema,
     type JoinRoomSchema,
 } from "@/lib/roomSchemas";
-import { useAppSelector } from "@/store/hooks";
+import { errorText } from "@/lib/errorText";
 
 const Home = () => {
+    const { t } = useTranslation();
     const queryClient = useQueryClient();
     const navigate = useNavigate();
-    const user = useAppSelector((s) => s.auth.user);
 
     const createForm = useForm<CreateRoomSchema>({
         resolver: zodResolver(createRoomSchema),
@@ -76,212 +73,171 @@ const Home = () => {
     };
 
     return (
-        <div className="mx-auto min-h-screen max-w-5xl space-y-6 bg-background p-6">
-            {/* Header */}
-            <div className="flex items-center justify-between border-b pb-4">
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight">
-                        Focus Rooms
-                    </h1>
-                    <p className="text-sm text-muted-foreground">
-                        Signed in as{" "}
-                        {user?.user_metadata?.display_name ?? user?.email}
-                    </p>
+        <>
+            <AppHeader />
+            <main
+                id="main-content"
+                tabIndex={-1}
+                className="mx-auto max-w-5xl space-y-6 p-6"
+            >
+                <h1 className="text-2xl font-bold tracking-tight">
+                    {t("home.title")}
+                </h1>
+
+                {/* Create & Join */}
+                <div className="grid gap-4 md:grid-cols-2">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-lg">{t("home.createTitle")}</CardTitle>
+                            <CardDescription>{t("home.createDescription")}</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {createRoomMutation.isError && (
+                                <p role="alert" className="mb-4 text-sm font-medium text-destructive">
+                                    {errorText(t, createRoomMutation.error)}
+                                </p>
+                            )}
+                            <form
+                                id="create-room-form"
+                                onSubmit={createForm.handleSubmit(onCreate)}
+                                noValidate
+                            >
+                                <FieldGroup>
+                                    <Controller
+                                        name="name"
+                                        control={createForm.control}
+                                        render={({ field, fieldState }) => (
+                                            <Field data-invalid={fieldState.invalid}>
+                                                <FieldLabel htmlFor="create-room-name">
+                                                    {t("home.roomName")}
+                                                </FieldLabel>
+                                                <Input
+                                                    {...field}
+                                                    id="create-room-name"
+                                                    aria-invalid={fieldState.invalid}
+                                                    placeholder={t("home.roomNamePlaceholder")}
+                                                    autoComplete="off"
+                                                />
+                                                <TFieldError error={fieldState.error} />
+                                            </Field>
+                                        )}
+                                    />
+                                </FieldGroup>
+                            </form>
+                        </CardContent>
+                        <CardFooter>
+                            <Button
+                                type="submit"
+                                form="create-room-form"
+                                className="w-full"
+                                disabled={createRoomMutation.isPending}
+                            >
+                                {createRoomMutation.isPending
+                                    ? t("home.creating")
+                                    : t("home.create")}
+                            </Button>
+                        </CardFooter>
+                    </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-lg">{t("home.joinTitle")}</CardTitle>
+                            <CardDescription>{t("home.joinDescription")}</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {joinRoomMutation.isError && (
+                                <p role="alert" className="mb-4 text-sm font-medium text-destructive">
+                                    {errorText(t, joinRoomMutation.error)}
+                                </p>
+                            )}
+                            <form
+                                id="join-room-form"
+                                onSubmit={joinForm.handleSubmit(onJoin)}
+                                noValidate
+                            >
+                                <FieldGroup>
+                                    <Controller
+                                        name="code"
+                                        control={joinForm.control}
+                                        render={({ field, fieldState }) => (
+                                            <Field data-invalid={fieldState.invalid}>
+                                                <FieldLabel htmlFor="join-room-code">
+                                                    {t("home.roomCode")}
+                                                </FieldLabel>
+                                                <Input
+                                                    {...field}
+                                                    id="join-room-code"
+                                                    dir="ltr"
+                                                    aria-invalid={fieldState.invalid}
+                                                    placeholder="A3F9C2"
+                                                    autoComplete="off"
+                                                    className="uppercase"
+                                                />
+                                                <TFieldError error={fieldState.error} />
+                                            </Field>
+                                        )}
+                                    />
+                                </FieldGroup>
+                            </form>
+                        </CardContent>
+                        <CardFooter>
+                            <Button
+                                type="submit"
+                                form="join-room-form"
+                                className="w-full"
+                                disabled={joinRoomMutation.isPending}
+                            >
+                                {joinRoomMutation.isPending
+                                    ? t("home.joining")
+                                    : t("home.join")}
+                            </Button>
+                        </CardFooter>
+                    </Card>
                 </div>
-                <Button
-                    variant="outline"
-                    onClick={() => supabase.auth.signOut()}
-                >
-                    Logout
-                </Button>
-            </div>
 
-            {/* Create & Join */}
-            <div className="grid gap-4 md:grid-cols-2">
-                {/* Create */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="text-lg">Create a Room</CardTitle>
-                        <CardDescription>
-                            Start a new focus room and share the code.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        {createRoomMutation.isError && (
-                            <p
-                                role="alert"
-                                className="mb-4 text-sm font-medium text-destructive"
-                            >
-                                {createRoomMutation.error.message}
-                            </p>
-                        )}
-                        <form
-                            id="create-room-form"
-                            onSubmit={createForm.handleSubmit(onCreate)}
-                        >
-                            <FieldGroup>
-                                <Controller
-                                    name="name"
-                                    control={createForm.control}
-                                    render={({ field, fieldState }) => (
-                                        <Field
-                                            data-invalid={fieldState.invalid}
-                                        >
-                                            <FieldLabel htmlFor="create-room-name">
-                                                Room name
-                                            </FieldLabel>
-                                            <Input
-                                                {...field}
-                                                id="create-room-name"
-                                                aria-invalid={
-                                                    fieldState.invalid
-                                                }
-                                                placeholder="e.g. Exam week grind"
-                                                autoComplete="off"
-                                            />
-                                            {fieldState.invalid && (
-                                                <FieldError
-                                                    errors={[fieldState.error]}
-                                                />
-                                            )}
-                                        </Field>
-                                    )}
-                                />
-                            </FieldGroup>
-                        </form>
-                    </CardContent>
-                    <CardFooter>
-                        <Button
-                            type="submit"
-                            form="create-room-form"
-                            className="w-full"
-                            disabled={createRoomMutation.isPending}
-                        >
-                            {createRoomMutation.isPending
-                                ? "Creating..."
-                                : "Create Room"}
-                        </Button>
-                    </CardFooter>
-                </Card>
+                {/* My rooms */}
+                <section className="space-y-4" aria-labelledby="my-rooms-heading">
+                    <h2 id="my-rooms-heading" className="text-xl font-semibold tracking-tight">
+                        {t("home.myRooms")}
+                    </h2>
 
-                {/* Join */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="text-lg">Join a Room</CardTitle>
-                        <CardDescription>
-                            Enter a 6-character room code.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        {joinRoomMutation.isError && (
-                            <p
-                                role="alert"
-                                className="mb-4 text-sm font-medium text-destructive"
-                            >
-                                {joinRoomMutation.error.message}
-                            </p>
-                        )}
-                        <form
-                            id="join-room-form"
-                            onSubmit={joinForm.handleSubmit(onJoin)}
-                        >
-                            <FieldGroup>
-                                <Controller
-                                    name="code"
-                                    control={joinForm.control}
-                                    render={({ field, fieldState }) => (
-                                        <Field
-                                            data-invalid={fieldState.invalid}
-                                        >
-                                            <FieldLabel htmlFor="join-room-code">
-                                                Room code
-                                            </FieldLabel>
-                                            <Input
-                                                {...field}
-                                                id="join-room-code"
-                                                aria-invalid={
-                                                    fieldState.invalid
-                                                }
-                                                placeholder="A3F9C2"
-                                                autoComplete="off"
-                                                className="uppercase"
-                                            />
-                                            {fieldState.invalid && (
-                                                <FieldError
-                                                    errors={[fieldState.error]}
-                                                />
-                                            )}
-                                        </Field>
-                                    )}
-                                />
-                            </FieldGroup>
-                        </form>
-                    </CardContent>
-                    <CardFooter>
-                        <Button
-                            type="submit"
-                            form="join-room-form"
-                            className="w-full"
-                            disabled={joinRoomMutation.isPending}
-                        >
-                            {joinRoomMutation.isPending
-                                ? "Joining..."
-                                : "Join Room"}
-                        </Button>
-                    </CardFooter>
-                </Card>
-            </div>
-
-            {/* My rooms */}
-            <div className="space-y-4">
-                <h2 className="text-xl font-semibold tracking-tight">
-                    My Rooms
-                </h2>
-
-                {roomsQuery.isPending ? (
-                    <p className="text-sm text-muted-foreground">
-                        Loading rooms...
-                    </p>
-                ) : roomsQuery.isError ? (
-                    <p className="text-sm text-destructive">
-                        Error: {roomsQuery.error.message}
-                    </p>
-                ) : roomsQuery.data.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">
-                        No rooms yet. Create one or join with a code.
-                    </p>
-                ) : (
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                        {roomsQuery.data.map((room) => (
-                            <Card
-                                key={room.id}
-                                className="flex flex-col justify-between"
-                            >
-                                <CardHeader className="pb-3">
-                                    <CardTitle className="text-base">
-                                        {room.name}
-                                    </CardTitle>
-                                    <CardDescription className="font-mono">
-                                        {room.code}
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardFooter className="pt-0">
-                                    <Button
-                                        variant="outline"
-                                        className="h-8 w-full text-xs"
-                                        onClick={() =>
-                                            navigate(`/room/${room.code}`)
-                                        }
-                                    >
-                                        Enter Room
-                                    </Button>
-                                </CardFooter>
-                            </Card>
-                        ))}
-                    </div>
-                )}
-            </div>
-        </div>
+                    {roomsQuery.isPending ? (
+                        <p className="text-sm text-muted-foreground">{t("home.loadingRooms")}</p>
+                    ) : roomsQuery.isError ? (
+                        <p role="alert" className="text-sm text-destructive">
+                            {errorText(t, roomsQuery.error)}
+                        </p>
+                    ) : roomsQuery.data.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">{t("home.noRooms")}</p>
+                    ) : (
+                        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                            {roomsQuery.data.map((room) => (
+                                <li key={room.id}>
+                                    <Card className="flex h-full flex-col justify-between">
+                                        <CardHeader className="pb-3">
+                                            <CardTitle className="text-base">{room.name}</CardTitle>
+                                            <CardDescription className="font-mono" dir="ltr">
+                                                {room.code}
+                                            </CardDescription>
+                                        </CardHeader>
+                                        <CardFooter className="pt-0">
+                                            <Button
+                                                variant="outline"
+                                                className="h-8 w-full text-xs"
+                                                onClick={() => navigate(`/room/${room.code}`)}
+                                                aria-label={t("home.enterRoomLabel", { name: room.name })}
+                                            >
+                                                {t("home.enterRoom")}
+                                            </Button>
+                                        </CardFooter>
+                                    </Card>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </section>
+            </main>
+        </>
     );
 };
 

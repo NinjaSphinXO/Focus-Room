@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      focus_sessions: {
+        Row: {
+          created_at: string
+          ended_at: string
+          id: string
+          room_id: string | null
+          seconds: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          ended_at: string
+          id?: string
+          room_id?: string | null
+          seconds: number
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          ended_at?: string
+          id?: string
+          room_id?: string | null
+          seconds?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "focus_sessions_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "focus_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -58,6 +100,51 @@ export type Database = {
           },
           {
             foreignKeyName: "room_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      room_tasks: {
+        Row: {
+          created_at: string
+          done: boolean
+          id: string
+          position: number
+          room_id: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          done?: boolean
+          id?: string
+          position: number
+          room_id: string
+          title: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          done?: boolean
+          id?: string
+          position?: number
+          room_id?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_tasks_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "room_tasks_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -154,6 +241,23 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "rooms"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      record_focus_session: {
+        Args: { p_room_id: string }
+        Returns: {
+          created_at: string
+          ended_at: string
+          id: string
+          room_id: string | null
+          seconds: number
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "focus_sessions"
           isOneToOne: true
           isSetofReturn: false
         }

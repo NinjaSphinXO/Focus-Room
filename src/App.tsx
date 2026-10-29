@@ -7,6 +7,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Home from "./pages/Home";
 import Room from "./pages/Room";
+import Stats from "./pages/Stats";
 
 const App = () => {
     useAuthInit();
@@ -20,6 +21,7 @@ const App = () => {
                 <Route element={<ProtectedLayout />}>
                     <Route path="/" element={<Home />} />
                     <Route path="/room/:code" element={<Room />} />
+                    <Route path="/stats" element={<Stats />} />
                 </Route>
                 <Route
                     path="*"

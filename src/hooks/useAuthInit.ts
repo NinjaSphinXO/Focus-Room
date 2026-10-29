@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { supabase } from "../lib/supabaseClient";
-import { useAppDispatch } from "../store/hooks";
-import { setSession } from "../store/authSlice";
+import { supabase } from "@/lib/supabaseClient";
+import { useAppDispatch } from "@/store/hooks";
+import { setSession } from "@/store/authSlice";
 
 export function useAuthInit() {
     const dispatch = useAppDispatch();
@@ -17,13 +17,12 @@ export function useAuthInit() {
         });
 
         // 2. Keep store in sync: login, logout, token refresh
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        const {
+            data: { subscription },
+        } = supabase.auth.onAuthStateChange((event, session) => {
             dispatch(setSession(session));
-
-            // Clear React Query cache on sign out to prevent data leaks/flashes between users
-            if (event === "SIGNED_OUT") {
-                queryClient.clear();
-            }
+            // Logout: wipe cached data so the NEXT account never sees this one's rooms or tasks
+            if (event === "SIGNED_OUT") queryClient.clear();
         });
 
         // 3. Cleanup

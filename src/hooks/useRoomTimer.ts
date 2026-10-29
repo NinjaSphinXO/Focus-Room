@@ -1,9 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { getServerOffset, getTimer } from "@/api/timer";
+import { roomTimerKey } from "@/lib/queryKeys";
 
-// One place for the key, so the realtime listener and the query never drift apart
-export const roomTimerKey = (roomId: string | undefined) =>
-    ["room-timer", roomId] as const;
+export { roomTimerKey };
 
 export function useRoomTimer(roomId: string | undefined) {
     return useQuery({

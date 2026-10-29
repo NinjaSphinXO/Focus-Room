@@ -1,8 +1,9 @@
 import { z } from "zod";
 
+// Messages are translation keys. UI translates them with t(error.message).
 export const loginSchema = z.object({
-    email: z.email({ message: "Enter a valid email" }),
-    password: z.string().min(1, { message: "Password is required" }),
+    email: z.email({ message: "validation.emailInvalid" }),
+    password: z.string().min(1, { message: "validation.passwordRequired" }),
 });
 
 export const registerSchema = z
@@ -10,19 +11,19 @@ export const registerSchema = z
         displayName: z
             .string()
             .trim()
-            .min(3, { message: "Display name must be at least 3 characters" })
-            .max(30, { message: "Display name must be at most 30 characters" }),
-        email: z.email({ message: "Enter a valid email" }),
+            .min(3, { message: "validation.displayNameMin" })
+            .max(30, { message: "validation.displayNameMax" }),
+        email: z.email({ message: "validation.emailInvalid" }),
         password: z
             .string()
-            .min(1, { message: "Password is required" })
-            .min(8, { message: "Password must be at least 8 characters" }),
+            .min(1, { message: "validation.passwordRequired" })
+            .min(8, { message: "validation.passwordMin" }),
         confirmPassword: z
             .string()
-            .min(1, { message: "Please confirm your password" }),
+            .min(1, { message: "validation.confirmRequired" }),
     })
     .refine((data) => data.password === data.confirmPassword, {
-        message: "Passwords do not match",
+        message: "validation.passwordsMismatch",
         path: ["confirmPassword"],
     });
 

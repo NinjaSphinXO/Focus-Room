@@ -1,5 +1,7 @@
 import { supabase } from "@/lib/supabaseClient";
 
+// Errors thrown here carry translation keys ("errors.*"). The UI turns them into text.
+
 export const getMyRooms = async () => {
     const { data, error } = await supabase
         .from("rooms")
@@ -25,13 +27,14 @@ export const joinRoom = async (code: string) => {
     });
     if (error) {
         if (error.code === "P0002") {
-            throw new Error("Room not found. Check the code.");
+            throw new Error("errors.roomNotFound");
         }
         throw error;
     }
     return data;
 };
 
+// null = room does not exist OR you are not a member (RLS hides it)
 export const roomByCode = async (code: string) => {
     const { data, error } = await supabase
         .from("rooms")
@@ -60,7 +63,7 @@ export const leaveRoom = async (roomId: string, userId: string) => {
         .eq("room_id", roomId)
         .eq("user_id", userId);
     if (error) throw error;
-    if (count === 0) throw new Error("Could not leave the room.");
+    if (count === 0) throw new Error("errors.leaveFailed");
 };
 
 export const deleteRoom = async (roomId: string) => {
@@ -69,5 +72,5 @@ export const deleteRoom = async (roomId: string) => {
         .delete({ count: "exact" })
         .eq("id", roomId);
     if (error) throw error;
-    if (count === 0) throw new Error("Only the host can delete this room.");
+    if (count === 0) throw new Error("errors.notHostDelete");
 };

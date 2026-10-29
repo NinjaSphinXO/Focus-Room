@@ -2,6 +2,7 @@ import { registerSchema, type RegisterSchema } from "@/lib/authSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
 import { useMutation } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,15 +14,14 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
-import {
-    Field,
-    FieldError,
-    FieldGroup,
-    FieldLabel,
-} from "@/components/ui/field";
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
+import TFieldError from "@/components/TFieldError";
+import { errorText } from "@/lib/errorText";
 import { supabase } from "@/lib/supabaseClient";
 
 const Register = () => {
+    const { t } = useTranslation();
     const { handleSubmit, control, reset } = useForm<RegisterSchema>({
         resolver: zodResolver(registerSchema),
         defaultValues: {
@@ -33,11 +33,7 @@ const Register = () => {
     });
 
     const signUpMutation = useMutation({
-        mutationFn: async ({
-            displayName,
-            email,
-            password,
-        }: RegisterSchema) => {
+        mutationFn: async ({ displayName, email, password }: RegisterSchema) => {
             const { data, error } = await supabase.auth.signUp({
                 email,
                 password,
@@ -45,10 +41,9 @@ const Register = () => {
             });
             if (error) throw error;
 
+            // Confirm-email ON: a duplicate email returns no error, but identities is empty
             if (data.user?.identities?.length === 0) {
-                throw new Error(
-                    "This email is already registered. Try logging in.",
-                );
+                throw new Error("errors.emailTaken");
             }
             return data;
         },
@@ -62,174 +57,129 @@ const Register = () => {
     const needsEmailConfirm =
         signUpMutation.isSuccess && !signUpMutation.data.session;
 
+    const textField = (
+        name: "displayName" | "email" | "password" | "confirmPassword",
+        id: string,
+        label: string,
+        props: { type?: string; placeholder?: string; autoComplete: string },
+    ) => (
+        <Controller
+            name={name}
+            control={control}
+            render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor={id}>{label}</FieldLabel>
+                    <Input
+                        {...field}
+                        id={id}
+                        type={props.type}
+                        aria-invalid={fieldState.invalid}
+                        placeholder={props.placeholder}
+                        autoComplete={props.autoComplete}
+                    />
+                    <TFieldError error={fieldState.error} />
+                </Field>
+            )}
+        />
+    );
+
     return (
-        <div className="flex min-h-screen items-center justify-center p-4">
-            <Card className="w-full sm:max-w-md">
-                <CardHeader>
-                    <CardTitle>Create an account</CardTitle>
-                    <CardDescription>
-                        Enter your details to create your account.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    {signUpMutation.isError && (
-                        <p
-                            role="alert"
-                            className="mb-4 text-sm font-medium text-destructive"
-                        >
-                            {signUpMutation.error.message}
+        <main
+            id="main-content"
+            className="flex min-h-screen items-center justify-center p-4"
+        >
+            <div className="w-full sm:max-w-md">
+                <div className="mb-2 flex justify-end">
+                    <LanguageSwitcher />
+                </div>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>
+                            <h1>{t("auth.registerTitle")}</h1>
+                        </CardTitle>
+                        <CardDescription>{t("auth.registerDescription")}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {signUpMutation.isError && (
+                            <p
+                                role="alert"
+                                className="mb-4 text-sm font-medium text-destructive"
+                            >
+                                {errorText(t, signUpMutation.error)}
+                            </p>
+                        )}
+                        {needsEmailConfirm && (
+                            <p role="status" className="mb-4 text-sm text-muted-foreground">
+                                {t("auth.checkEmail")}
+                            </p>
+                        )}
+
+                        <form id="register-form" onSubmit={handleSubmit(onSubmit)} noValidate>
+                            <FieldGroup>
+                                {textField("displayName", "register-displayName", t("auth.displayName"), {
+                                    placeholder: "John Doe",
+                                    autoComplete: "name",
+                                })}
+                                {textField("email", "register-email", t("auth.email"), {
+                                    type: "email",
+                                    placeholder: "example@mail.com",
+                                    autoComplete: "email",
+                                })}
+                                {textField("password", "register-password", t("auth.password"), {
+                                    type: "password",
+                                    placeholder: "••••••••",
+                                    autoComplete: "new-password",
+                                })}
+                                {textField(
+                                    "confirmPassword",
+                                    "register-confirmPassword",
+                                    t("auth.confirmPassword"),
+                                    {
+                                        type: "password",
+                                        placeholder: "••••••••",
+                                        autoComplete: "new-password",
+                                    },
+                                )}
+                            </FieldGroup>
+                        </form>
+                    </CardContent>
+                    <CardFooter className="flex-col gap-4">
+                        <Field orientation="horizontal">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                disabled={signUpMutation.isPending}
+                                onClick={() => {
+                                    reset();
+                                    signUpMutation.reset();
+                                }}
+                            >
+                                {t("common.reset")}
+                            </Button>
+                            <Button
+                                type="submit"
+                                form="register-form"
+                                className="flex-1 sm:flex-none"
+                                disabled={signUpMutation.isPending}
+                            >
+                                {signUpMutation.isPending
+                                    ? t("auth.creatingAccount")
+                                    : t("auth.register")}
+                            </Button>
+                        </Field>
+                        <p className="text-sm text-muted-foreground">
+                            {t("auth.haveAccount")}{" "}
+                            <Link
+                                to="/login"
+                                className="font-medium text-foreground underline underline-offset-4"
+                            >
+                                {t("auth.loginLink")}
+                            </Link>
                         </p>
-                    )}
-                    {needsEmailConfirm && (
-                        <p className="mb-4 text-sm text-muted-foreground">
-                            Account created. Check your email to confirm, then
-                            log in.
-                        </p>
-                    )}
-
-                    <form id="register-form" onSubmit={handleSubmit(onSubmit)}>
-                        <FieldGroup>
-                            {/* Display Name */}
-                            <Controller
-                                name="displayName"
-                                control={control}
-                                render={({ field, fieldState }) => (
-                                    <Field data-invalid={fieldState.invalid}>
-                                        <FieldLabel htmlFor="register-displayName">
-                                            Display Name
-                                        </FieldLabel>
-                                        <Input
-                                            {...field}
-                                            id="register-displayName"
-                                            aria-invalid={fieldState.invalid}
-                                            placeholder="John Doe"
-                                            autoComplete="name"
-                                        />
-                                        {fieldState.invalid && (
-                                            <FieldError
-                                                errors={[fieldState.error]}
-                                            />
-                                        )}
-                                    </Field>
-                                )}
-                            />
-
-                            {/* Email */}
-                            <Controller
-                                name="email"
-                                control={control}
-                                render={({ field, fieldState }) => (
-                                    <Field data-invalid={fieldState.invalid}>
-                                        <FieldLabel htmlFor="register-email">
-                                            Email Address
-                                        </FieldLabel>
-                                        <Input
-                                            {...field}
-                                            id="register-email"
-                                            type="email"
-                                            aria-invalid={fieldState.invalid}
-                                            placeholder="example@mail.com"
-                                            autoComplete="email"
-                                        />
-                                        {fieldState.invalid && (
-                                            <FieldError
-                                                errors={[fieldState.error]}
-                                            />
-                                        )}
-                                    </Field>
-                                )}
-                            />
-
-                            {/* Password */}
-                            <Controller
-                                name="password"
-                                control={control}
-                                render={({ field, fieldState }) => (
-                                    <Field data-invalid={fieldState.invalid}>
-                                        <FieldLabel htmlFor="register-password">
-                                            Password
-                                        </FieldLabel>
-                                        <Input
-                                            {...field}
-                                            id="register-password"
-                                            type="password"
-                                            aria-invalid={fieldState.invalid}
-                                            placeholder="••••••••"
-                                            autoComplete="new-password"
-                                        />
-                                        {fieldState.invalid && (
-                                            <FieldError
-                                                errors={[fieldState.error]}
-                                            />
-                                        )}
-                                    </Field>
-                                )}
-                            />
-
-                            {/* Confirm Password */}
-                            <Controller
-                                name="confirmPassword"
-                                control={control}
-                                render={({ field, fieldState }) => (
-                                    <Field data-invalid={fieldState.invalid}>
-                                        <FieldLabel htmlFor="register-confirmPassword">
-                                            Confirm Password
-                                        </FieldLabel>
-                                        <Input
-                                            {...field}
-                                            id="register-confirmPassword"
-                                            type="password"
-                                            aria-invalid={fieldState.invalid}
-                                            placeholder="••••••••"
-                                            autoComplete="new-password"
-                                        />
-                                        {fieldState.invalid && (
-                                            <FieldError
-                                                errors={[fieldState.error]}
-                                            />
-                                        )}
-                                    </Field>
-                                )}
-                            />
-                        </FieldGroup>
-                    </form>
-                </CardContent>
-                <CardFooter className="flex-col gap-4">
-                    <Field orientation="horizontal">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            disabled={signUpMutation.isPending}
-                            onClick={() => {
-                                reset();
-                                signUpMutation.reset();
-                            }}
-                        >
-                            Reset
-                        </Button>
-                        <Button
-                            type="submit"
-                            form="register-form"
-                            className="flex-1 sm:flex-none"
-                            disabled={signUpMutation.isPending}
-                        >
-                            {signUpMutation.isPending
-                                ? "Creating account..."
-                                : "Register"}
-                        </Button>
-                    </Field>
-                    <p className="text-sm text-muted-foreground">
-                        Already have an account?{" "}
-                        <Link
-                            to="/login"
-                            className="font-medium text-foreground underline underline-offset-4"
-                        >
-                            Log in
-                        </Link>
-                    </p>
-                </CardFooter>
-            </Card>
-        </div>
+                    </CardFooter>
+                </Card>
+            </div>
+        </main>
     );
 };
 
