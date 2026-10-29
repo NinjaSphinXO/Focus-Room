@@ -1,6 +1,6 @@
 -- =====================================================================
--- PHASE 3: per-member task queue inside a room
--- Run once in Supabase SQL Editor (use the copy button). Then regenerate types.
+-- 004: per-member task queue inside a room
+-- Phase 3. Needs 001. Run once, then regenerate types.
 -- =====================================================================
 
 create table public.room_tasks (

@@ -1,6 +1,6 @@
 -- =====================================================================
--- PHASE 4: focus session history + server-validated recording
--- Run once in Supabase SQL Editor. Then regenerate types.
+-- 005: focus session history + server-validated recording
+-- Phase 4. Needs 001 and 003. Run once, then regenerate types.
 -- =====================================================================
 
 create table public.focus_sessions (
